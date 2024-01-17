@@ -1,0 +1,9 @@
+env:
+  system: "s"
+  area : "biz"
+  group: "tec"
+  logType: "nor"
+  level: "debug"
+  printType:
+    - "f"
+    - "c"
