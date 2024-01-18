@@ -3,7 +3,8 @@ env:
   area : "biz"
   group: "tec"
   logType: "nor"
-  level: "debug"
+  level: "trace"
   printType:
     - "f"
     - "c"
+  filePath: ""

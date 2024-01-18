@@ -2,8 +2,10 @@ package main
 
 import "common-log/log"
 
-var logger = log.GetLogger()
-
 func main() {
-	logger.Error().Msg("this is log")
+	log.Trace("this is trace test")
+	log.Info("this is trace test")
+	log.Debug("this is debug test")
+	log.Error("this is error test")
+	log.Fatal("this is fatal test")
 }

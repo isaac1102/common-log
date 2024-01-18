@@ -40,7 +40,6 @@ func loadConfig() {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			fmt.Println(fmt.Sprintf("%s error: %v", fnc, err))
-			//log.Error()
 			f, err = os.Create(CONFIG_FILE_NAME)
 			if err != nil {
 				fmt.Println(fmt.Sprintf("%s error: %v", fnc, err))
