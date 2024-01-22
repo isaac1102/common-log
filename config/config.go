@@ -22,6 +22,9 @@ type Env struct {
 	Host      string   `yaml:"host"`
 	Level     string   `yaml:"level"`
 	PrintType []string `yaml:"printType"`
+	FilePath  string   `yaml:"filePath"`
+	Pod       string   `yaml:"pod"`
+	Gid       string   `yaml:"gid"`
 }
 
 var Cfg Config

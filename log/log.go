@@ -13,15 +13,17 @@ import (
 	"time"
 )
 
-var Logger = getLogger()
+var (
+	Logger       = GetLogger()
+	podName, gid string
+)
 
 type CustomWriterForFile struct {
 	file *os.File
 }
-
 type LogData struct {
 	Time    time.Time `json:"time"`
-	Id      string    `json:"id"`
+	Key     string    `json:"key"`
 	Message string    `json:"message"`
 }
 
@@ -33,8 +35,26 @@ type InnerLogData struct {
 	Message string    `json:"message"`
 }
 
-func getLogger() zerolog.Logger {
-	var logger zerolog.Logger
+func Trace(msg string) {
+	Logger.Trace().Msg(msg)
+}
+func Debug(msg string) {
+	Logger.Debug().Msg(msg)
+}
+func Info(msg string) {
+	Logger.Info().Msg(msg)
+}
+func Warn(msg string) {
+	Logger.Warn().Msg(msg)
+}
+func Error(msg string) {
+	Logger.Error().Msg(msg)
+}
+func Fatal(msg string) {
+	Logger.Fatal().Msg(msg)
+}
+
+func GetLogger() zerolog.Logger {
 	configuration := config.Cfg
 
 	lev := configuration.Env.Level
@@ -45,22 +65,58 @@ func getLogger() zerolog.Logger {
 		level = zerolog.InfoLevel
 	}
 
-	podName := os.Getenv("POD_NAME")
-
+	podName = os.Getenv(configuration.Env.Pod)
 	if podName == "" {
-		podName = "PODNAME"
+		podName = "DEFAULT"
 	}
 
-	sampleData := "DS34523-001"
+	output := defineConsoleWriter()
 
-	var output io.Writer = zerolog.ConsoleWriter{
+	var writer io.Writer
+	if isFilePrint(configuration.Env.PrintType) {
+		logFile, err := os.OpenFile(
+			fmt.Sprintf("%s%s%s_%s_%s_%s_%s_%s.log",
+				configuration.Env.FilePath,
+				configuration.Env.System,
+				configuration.Env.Area,
+				configuration.Env.Group,
+				podName,
+				configuration.Env.LogType,
+				level,
+				time.Now().Format("20060102-15")),
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+			0664)
+
+		if err != nil {
+			log.Err(err)
+		}
+
+		fileWriter := zerolog.New(CustomWriterForFile{logFile}).
+			With().
+			Logger()
+
+		writer = zerolog.MultiLevelWriter(output, fileWriter)
+	} else {
+		writer = output
+	}
+
+	return zerolog.New(writer).
+		With().
+		Timestamp().
+		Caller().
+		Logger()
+}
+
+func defineConsoleWriter() io.Writer {
+	gid = config.Cfg.Env.Gid
+	return zerolog.ConsoleWriter{
 		Out:        os.Stderr,
 		TimeFormat: time.DateTime,
 		FormatLevel: func(i interface{}) string {
 			return strings.ToUpper(fmt.Sprintf("%s", i))
 		},
 		FormatMessage: func(i interface{}) string {
-			return fmt.Sprintf("[[[((%s)) %s ]]]", sampleData, i)
+			return fmt.Sprintf("[[[((%s)) %s ]]]", gid, i)
 		},
 		FormatCaller: func(i interface{}) string {
 			return filepath.Base(fmt.Sprintf("%s", i))
@@ -74,42 +130,6 @@ func getLogger() zerolog.Logger {
 			return formatted
 		},
 	}
-
-	now := time.Now().Format("20060102-15")
-	multi := output
-
-	if isFilePrint(configuration.Env.PrintType) {
-		logFile, err := os.OpenFile(
-			fmt.Sprintf("%s%s_%s_%s_%s_%s_%s.log",
-				configuration.Env.System,
-				configuration.Env.Area,
-				configuration.Env.Group,
-				podName,
-				configuration.Env.LogType,
-				level,
-				now),
-			os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-			0664)
-
-		if err != nil {
-			log.Err(err)
-		}
-
-		fileWriter := zerolog.New(CustomWriterForFile{logFile}).
-			With().
-			Str("ID", sampleData).
-			Logger()
-
-		multi = zerolog.MultiLevelWriter(output, fileWriter)
-	}
-
-	logger = zerolog.New(multi).
-		With().
-		Timestamp().
-		Caller().
-		Logger()
-
-	return logger
 }
 
 func isFilePrint(printTypes []string) bool {
@@ -141,33 +161,9 @@ func (cw CustomWriterForFile) Write(p []byte) (n int, err error) {
 		innerLogData.Time.Format("06-01-02 15:04:05"),
 		fmt.Sprintf(strings.ToUpper(innerLogData.Level)),
 		filepath.Base(innerLogData.Caller),
-		logData.Id,
+		gid,
 		innerLogData.Message,
 	)
 
 	return cw.file.WriteString(formattedMessage)
-}
-
-func Trace(msg string) {
-	Logger.Trace().Msg(msg)
-}
-
-func Debug(msg string) {
-	Logger.Debug().Msg(msg)
-}
-
-func Info(msg string) {
-	Logger.Info().Msg(msg)
-}
-
-func Warn(msg string) {
-	Logger.Warn().Msg(msg)
-}
-
-func Error(msg string) {
-	Logger.Error().Msg(msg)
-}
-
-func Fatal(msg string) {
-	Logger.Fatal().Msg(msg)
 }

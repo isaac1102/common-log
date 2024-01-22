@@ -3,8 +3,10 @@ env:
   area : "biz"
   group: "tec"
   logType: "nor"
-  level: "trace"
+  level: "warn"
   printType:
     - "f"
     - "c"
-  filePath: ""
+  filePath: "./"
+  pod: ""
+  gid: "GID-00001"
